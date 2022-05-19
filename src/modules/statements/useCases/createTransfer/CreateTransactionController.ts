@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { CreateTransactionUseCase } from "./CreateTransactionUseCase";
 
 export class CreateTransferController {
-  async handle(request: Request, response: Response): Promise<Response> {
+  async execute(request: Request, response: Response): Promise<Response> {
     const { user_id: sender_id } = request.params;
     const { amount, description } = request.body;
     const { id } = request.user;
@@ -19,6 +19,6 @@ export class CreateTransferController {
       description,
     });
 
-    return response.send();
+    return response.status(201).json({ message: "Transfer success!" });
   }
 }

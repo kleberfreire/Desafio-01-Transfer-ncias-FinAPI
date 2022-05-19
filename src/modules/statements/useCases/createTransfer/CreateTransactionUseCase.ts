@@ -10,6 +10,16 @@ interface IRequest {
   description: string;
 }
 
+interface IPayload {
+  sub: string;
+}
+
+enum OperationType {
+  DEPOSIT = "deposit",
+  WITHDRAW = "withdraw",
+  TRANSFER = "transfer",
+}
+
 @injectable()
 export class CreateTransactionUseCase {
   constructor(
@@ -27,8 +37,9 @@ export class CreateTransactionUseCase {
     description,
   }: IRequest): Promise<void> {
     const user = await this.usersRepository.findById(id);
+    const senderUser = await this.usersRepository.findById(sender_id);
 
-    if (!user || user.id === sender_id) {
+    if (!user || user.id === sender_id || !senderUser) {
       throw new CreateTransfersError.UserNotFound();
     }
 
@@ -36,8 +47,23 @@ export class CreateTransactionUseCase {
       user_id: id,
     });
 
-    if (user.id !== sender_id) {
-      throw new Error("Incorrect transition");
+    if (balance < amount) {
+      throw new CreateTransfersError.InsufficientFunds();
     }
+
+    const userWithdraw = await this.statementsRepository.create({
+      user_id: id,
+      amount,
+      description,
+      type: "transfer" as OperationType,
+      sender_id,
+    });
+
+    const userSender = await this.statementsRepository.create({
+      user_id: sender_id,
+      amount,
+      description: `Transfer to ${user.name}`,
+      type: "deposit" as OperationType,
+    });
   }
 }
